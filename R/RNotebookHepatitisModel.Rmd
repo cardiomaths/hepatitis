@@ -1,0 +1,178 @@
+---
+title: "Time dependent solutions of a model of hepatitis"
+---
+
+```{r}
+
+library(deSolve)
+
+```
+
+
+Set up model
+```{r}
+
+saveOutput <- 'N'
+
+ini <- c(
+  N = 0,
+  A = 0,
+  M1 = 0,
+  M2 = 0,
+  C = 0.3,  
+  G = 0,
+  H = 1,
+  Ha = 0,
+  E = 0,
+  S = 1,
+  Sa = 0
+)
+
+parameters <- c(
+nu=0.1, 
+gammaM=0.01, 
+gammaA=1, 
+gammaG=1,
+phi=0.1, #Table 2 value of 0.1 
+kg=0.1, 
+kn=0.01, 
+betaA=0.1, 
+betaN=0.1, 
+betaC=0.12, 
+betaG=0.01,
+km1=30,
+km2=0.3, 
+phi2=10, 
+kh=0.1, 
+gammaM2=0.01,
+nu2=0.01, #Table 2 value of 0.01
+chiH=1, 
+gammaH=0.1, 
+gammaE=0.1, 
+km=0.0001, 
+r1=1, 
+r2=1
+)
+
+end <- 150
+times <- seq(from = 0, to = end, by = 0.02)
+
+model <- function (t, ini, parmameters) {
+  with(as.list(c(ini, parameters)), {
+    #f=ft(t, dam)
+    
+   dN = (C/(1+G)) - nu*(1+G/betaG)*N/(1+C/betaC)
+   dA = nu*(1+G/betaG)*N/(1+C/betaC) - gammaA*A - phi*A*(M1+phi2*M2)
+   dM1 = C - km1*phi*A*M1 + km2*M2 - gammaM*M1*(1+gammaM2*M2)
+   dM2 = km1*phi*A*M1 - km2*M2 - gammaM*M2
+   dC = kn*N^2/(betaN^2+N^2) + gammaA*(A^2/(betaA^2+A^2)) + Ha + km*M1 - C
+   dG = kg*M2 + kh*H - gammaG*G
+   dH = chiH*phi*S*Ha*(M1+phi2*M2)+gammaE*E-nu2*H*C+gammaH*Ha*S
+   dHa = nu2*H*C-chiH*phi*Ha*(M1+phi2*M2)-gammaH*Ha
+   dE = chiH*phi*Sa*Ha*(M1+phi2*M2)-gammaE*E+gammaH*Ha*Sa
+   dS = r2*Sa*(1+G) - r1*S*C
+   dSa = r1*S*C - r2*Sa*(1+G)
+
+    # return
+    list(c(dN, dA, dM1, dM2, dC, dG, dH, dHa, dE, dS, dSa))
+  })
+}
+
+```
+
+
+
+```{r}
+
+end <- 600
+times <- seq(from = 0, to = end, by = 0.2)
+#times <- seq(from = 0, to = end, by = 0.02)
+
+out5 <- ode(
+  y = ini,
+  times = times,
+  func = model,
+  parms = parameters
+)
+
+
+if (saveOutput == 'Y') {
+  
+  png(
+    filename = 'ModelSimulations.png',
+    width = 20,
+    height = 5,
+    units = 'cm',
+    res = 400
+  )
+  
+  par(
+    mfrow = c(1, 6),
+    mar = c(4, 3, 2.5, 1) - 0.1,
+    oma = c(0, 0, 0, 0),
+    mgp = c(2, 1, 0)
+  )
+  
+  plot(out5[, 1], out5[, 2], lwd = 3, type = "l", col = "magenta", 
+       xlab = "Time", ylab = "Neutrophils")
+  lines(out5[, 1], out5[, 3], lwd = 3, type = "l", col = "darkmagenta")
+  
+  plot(out5[, 1], out5[, 4], lwd = 3, type = "l", col = "green",
+    xlab = "Time", ylab = "Macrophages")
+  lines(out5[, 1], out5[, 5], lwd = 3, type = "l", col = "darkgreen")
+  
+  plot(out5[, 1], out5[, 6], lwd = 3, type = "l", col = "red", 
+       xlab = "Time", ylab = "pro-inflam")
+  
+  plot(out5[, 1], out5[, 7], lwd = 3, type = "l", col = "blue",
+    xlab = "Time", ylab = "anti-inflam")
+  
+  plot(out5[, 1], out5[, 8], lwd = 3, type = "l", col = "darkorange1",
+    xlab = "Time", ylab = "Hepatocytes", ylim = c(0, 1.1))
+  lines(out5[, 1], out5[, 9], lwd = 3, type = "l", col = "darkorange4")
+  lines(out5[, 1], out5[, 10], lwd = 3, type = "l", col = "black")
+  
+  plot(out5[, 1], out5[, 11], lwd = 3, type = "l", col = "cadetblue3", 
+    xlab = "Time", ylab = "Stellate cells", ylim = c(0, 1.1))
+  lines(out5[, 1], out5[, 12], lwd = 3, type = "l", col = "deepskyblue4")
+  
+  dev.off()
+  
+} else {
+  
+  par(
+    mfrow = c(1, 6),
+    mar = c(4, 3, 2.5, 1) - 0.1,
+    oma = c(0, 0, 0, 0),
+    mgp = c(2, 1, 0)
+  )
+  
+  plot(
+    out5[, 1], out5[, 2], lwd = 3, type = "l", col = "magenta",
+    xlab = "Time", ylab = "Neutrophils")
+  lines(out5[, 1], out5[, 3], lwd = 3, type = "l", col = "darkmagenta")
+  
+  plot(out5[, 1], out5[, 4], lwd = 3, type = "l", col = "green",
+    xlab = "Time", ylab = "Macrophages")
+  lines(out5[, 1], out5[, 5], lwd = 3, type = "l", col = "darkgreen")
+  
+  plot(out5[, 1], out5[, 6], lwd = 3, type = "l", col = "red",
+    xlab = "Time", ylab = "pro-inflam")
+  
+  plot(out5[, 1], out5[, 7], lwd = 3, type = "l", col = "blue",
+    xlab = "Time", ylab = "anti-inflam")
+  
+  plot(out5[, 1], out5[, 8], lwd = 3, type = "l", col = "darkorange1",
+    xlab = "Time", ylab = "Hepatocytes", ylim = c(0, 1.1))
+  lines(out5[, 1], out5[, 9], lwd = 3, type = "l", col = "darkorange4")
+  lines(out5[, 1], out5[, 10], lwd = 3, type = "l", col = "black")
+  
+  plot(out5[, 1], out5[, 11], lwd = 3, type = "l", col = "cadetblue3",
+    xlab = "Time", ylab = "Stellate cells", ylim = c(0, 1.1))
+  lines(out5[, 1], out5[, 12], lwd = 3, type = "l", col = "deepskyblue4")
+  
+}
+
+```
+
+
